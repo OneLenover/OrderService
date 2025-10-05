@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace OrderService.DataAccess.Postgres.Entities
 {
+    // Модель заказа
     public class Order
     {
         public long Id { get; set; }

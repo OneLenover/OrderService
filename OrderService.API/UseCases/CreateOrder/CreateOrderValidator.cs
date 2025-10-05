@@ -2,6 +2,7 @@
 
 namespace OrderService.API.UseCases.CreateOrder
 {
+    // Проверка корректности данных в команде
     public class CreateOrderValidator : AbstractValidator<CreateOrderCommand>
     {
         public CreateOrderValidator() 
