@@ -38,7 +38,7 @@ namespace OrderService.API.Controllers
         }
 
         // Получить заказ по OrderId
-        [HttpGet("{order_id:long}")]
+        [HttpGet("{order_id:long}", Name = "GetOrderById")]
         public async Task<IActionResult> GetById([FromRoute] long order_id, CancellationToken cancellationToken)
         {
             _logger.LogInformation("Получение заказа по ID={OrderId}", order_id);
