@@ -1,18 +1,24 @@
-﻿using MediatR;
+﻿using AutoMapper;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using OrderService.API.DTOs;
 using OrderService.DataAccess.Postgres;
 
 namespace OrderService.API.UseCases.GetOrder
 {
+    // Команда получения заказа по Id
+    public record GetOrderByIdQuery(long OrderId) : IRequest<OrderDto?>;
+
     // Обработчик команды получения заказа по Id
     public class GetOrderByIdQueryHandler : IRequestHandler<GetOrderByIdQuery, OrderDto?>
     {
         private readonly IAppDbContext _db;
+        private readonly IMapper _mapper;
 
-        public GetOrderByIdQueryHandler(IAppDbContext db)
+        public GetOrderByIdQueryHandler(IAppDbContext db, IMapper mapper)
         {
             _db = db;
+            _mapper = mapper;
         }
 
         public async Task<OrderDto?> Handle(GetOrderByIdQuery request, CancellationToken cancellationToken)
@@ -21,15 +27,7 @@ namespace OrderService.API.UseCases.GetOrder
 
             if (order == null) return null;
 
-            return new OrderDto(
-                order.Id,
-                order.ProductId,
-                order.Amount,
-                order.EmailClient,
-                order.Price,
-                order.PhoneNumber,
-                order.CreatedAt
-            );
+            return _mapper.Map<OrderDto>(order);
         }
     }
 }

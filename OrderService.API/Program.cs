@@ -3,6 +3,7 @@ using FluentValidation.AspNetCore;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using OrderService.API.Clients;
+using OrderService.API.Mappings;
 using OrderService.API.Services;
 using OrderService.DataAccess.Postgres;
 using Refit;
@@ -32,7 +33,7 @@ internal class Program
         builder.Services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
         // AutoMapper
-        builder.Services.AddAutoMapper(Assembly.GetExecutingAssembly());
+        builder.Services.AddAutoMapper(typeof(OrderMappingProfile).Assembly);
 
         // Kafka
         builder.Services.AddSingleton<KafkaProducer>();

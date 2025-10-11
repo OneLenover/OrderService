@@ -1,15 +1,19 @@
-﻿using MediatR;
+﻿using AutoMapper;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using OrderService.DataAccess.Postgres;
 
 namespace OrderService.API.UseCases.DeleteOrder
 {
+    // Команды удаления заказа
+    public record DeleteOrderCommand(long OrderId) : IRequest<bool>;
+
     // Обработик удаления заказа
     public class DeleteOrderHandler : IRequestHandler<DeleteOrderCommand, bool>
     {
         private readonly IAppDbContext _db;
 
-        public DeleteOrderHandler(IAppDbContext db)
+        public DeleteOrderHandler(IAppDbContext db, IMapper mapper)
         {
             _db = db;
         }
