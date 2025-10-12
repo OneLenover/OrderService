@@ -13,7 +13,7 @@ namespace OrderService.API.UseCases.DeleteOrder
     {
         private readonly IAppDbContext _db;
 
-        public DeleteOrderHandler(IAppDbContext db, IMapper mapper)
+        public DeleteOrderHandler(IAppDbContext db)
         {
             _db = db;
         }

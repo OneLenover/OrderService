@@ -2,6 +2,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using OrderService.API.DTOs;
+using OrderService.API.Mappings;
 using OrderService.DataAccess.Postgres;
 
 namespace OrderService.API.UseCases.GetOrder
@@ -13,12 +14,11 @@ namespace OrderService.API.UseCases.GetOrder
     public class GetOrderByIdQueryHandler : IRequestHandler<GetOrderByIdQuery, OrderDto?>
     {
         private readonly IAppDbContext _db;
-        private readonly IMapper _mapper;
+        private readonly OrderMapper _mapper = new();
 
-        public GetOrderByIdQueryHandler(IAppDbContext db, IMapper mapper)
+        public GetOrderByIdQueryHandler(IAppDbContext db)
         {
             _db = db;
-            _mapper = mapper;
         }
 
         public async Task<OrderDto?> Handle(GetOrderByIdQuery request, CancellationToken cancellationToken)
@@ -27,7 +27,7 @@ namespace OrderService.API.UseCases.GetOrder
 
             if (order == null) return null;
 
-            return _mapper.Map<OrderDto>(order);
+            return _mapper.ToOrderDto(order);
         }
     }
 }

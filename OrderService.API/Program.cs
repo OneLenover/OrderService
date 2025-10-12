@@ -33,7 +33,7 @@ internal class Program
         builder.Services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
         // AutoMapper
-        builder.Services.AddAutoMapper(typeof(OrderMappingProfile).Assembly);
+        // builder.Services.AddAutoMapper(typeof(OrderMappingProfile).Assembly);
 
         // Kafka
         builder.Services.AddSingleton<KafkaProducer>();

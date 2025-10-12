@@ -2,6 +2,7 @@
 using MediatR;
 using OrderService.API.Clients;
 using OrderService.API.DTOs;
+using OrderService.API.Mappings;
 using OrderService.API.Services;
 using OrderService.DataAccess.Postgres;
 using OrderService.DataAccess.Postgres.Entities;
@@ -21,21 +22,20 @@ namespace OrderService.API.UseCases.CreateOrder
         private readonly IPaymentClient _paymentClient;
         private readonly KafkaProducer _kafkaProducer;
         private readonly ILogger<CreateOrderHandler> _logger;
-        private readonly IMapper _mapper;
+        private readonly OrderMapper _mapper = new();
 
         public CreateOrderHandler(IAppDbContext context, IPaymentClient paymentClient, 
-            KafkaProducer kafkaProducer, ILogger<CreateOrderHandler> logger, IMapper mapper)
+            KafkaProducer kafkaProducer, ILogger<CreateOrderHandler> logger)
         {
             _context = context;
             _paymentClient = paymentClient;
             _kafkaProducer = kafkaProducer;
             _logger = logger;
-            _mapper = mapper;
         }
 
         public async Task<long> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
         {
-            var order = _mapper.Map<Order>(request);
+            var order = _mapper.ToOrder(request);
 
             await _context.Orders.AddAsync(order, cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
@@ -44,7 +44,7 @@ namespace OrderService.API.UseCases.CreateOrder
             {
                 var payment = await _paymentClient.CreatePayment(new CreatePaymentRequest(order.Id, order.Price));
 
-                var orderEvent = _mapper.Map<OrderCreatedEvent>(order);
+                var orderEvent = _mapper.ToOrderCreatedEvent(order);
                 // Отправка Kafka-события
                 var message = JsonSerializer.Serialize(orderEvent);
 
