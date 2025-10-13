@@ -1,49 +1,80 @@
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using OrderService.API.Clients;
+using OrderService.API.Mappings;
+using OrderService.API.Services;
+using OrderService.DataAccess.Postgres;
+using Refit;
+using System.Reflection;
+
 internal class Program
 {
     private static void Main(string[] args)
     {
+        // Старт
         var builder = WebApplication.CreateBuilder(args);
 
-        // Add services to the container.
-        // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+        // Swagger
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
 
+        // DbContext
+        var conn = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found");
+        builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(conn));
+        builder.Services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
+
+        // MediatR
+        builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblies(Assembly.GetExecutingAssembly()));
+
+        // FluentValidation
+        builder.Services.AddFluentValidationAutoValidation();
+        builder.Services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
+
+        // AutoMapper
+        // builder.Services.AddAutoMapper(typeof(OrderMappingProfile).Assembly);
+
+        // Kafka
+        builder.Services.AddSingleton<KafkaProducer>();
+
+        // Подключение контроллеров
+        builder.Services.AddControllers();
+
+        // Клиент платежного сервиса
+        var paymentBaseUrl = builder.Configuration["Services:PaymentService"];
+        if (string.IsNullOrEmpty(paymentBaseUrl)) throw new InvalidOperationException("Payment service URL is not configured");
+
+        builder.Services.AddRefitClient<IPaymentClient>().ConfigureHttpClient(c => c.BaseAddress = new Uri(paymentBaseUrl));
+
         var app = builder.Build();
 
-        // Configure the HTTP request pipeline.
+        using var scope = app.Services.CreateScope();
+        try
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            db.Database.Migrate();
+        }
+        catch (Exception ex)
+        {
+            var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+            logger.LogError(ex, "Ошибка применения миграций во время старта");
+        }
+
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
             app.UseSwaggerUI();
         }
 
+        app.UseExceptionHandler("/error");
+
         app.UseHttpsRedirection();
+        app.MapControllers();
 
-        var summaries = new[]
-        {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-        app.MapGet("/weatherforecast", () =>
-        {
-            var forecast = Enumerable.Range(1, 5).Select(index =>
-                new WeatherForecast
-                (
-                    DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                    Random.Shared.Next(-20, 55),
-                    summaries[Random.Shared.Next(summaries.Length)]
-                ))
-                .ToArray();
-            return forecast;
-        })
-        .WithName("GetWeatherForecast");
+        //app.Urls.Add("http://0.0.0.0:80");
 
         app.Run();
-    }
-}
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+    }
 }
